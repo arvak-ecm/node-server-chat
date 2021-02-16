@@ -1,20 +1,39 @@
 const { io } = require('../index');
-
+const { checkJWT } = require('../jwt/jwt');
+const {
+	userConect,
+	userDisconect,
+} = require('../controller/socket_controller');
 
 // Mensajes de Sockets
-io.on('connection', client => {
-    console.log('Cliente conectado');
+io.on('connection', (client) => {
+	const [isValid, uid] = checkJWT(client.handshake.headers['x-token']);
 
-    client.on('disconnect', () => {
-        console.log('Cliente desconectado');
-    });
+	if (!isValid) {
+		return client.disconnect();
+	}
 
-    client.on('mensaje', ( payload ) => {
-        console.log('Mensaje', payload);
+	userConect(uid);
 
-        io.emit( 'mensaje', { admin: 'Nuevo mensaje' } );
+	// init user room chat
+	client.join(uid);
+	client.on('person-msg', (payload) => {
+		console.log(payload);
 
-    });
+		io.to(payload.to).emit('person-msg', payload);
+	});
 
+	var ts = Date.now();
+	console.log('Cliente conectado - ' + Math.floor(ts / 1000));
 
+	client.on('disconnect', () => {
+		userDisconect(uid);
+		console.log('Cliente desconectado - ' + Math.floor(ts / 1000));
+	});
+
+	client.on('mensaje', (payload) => {
+		console.log('Mensaje', payload);
+
+		io.emit('mensaje', { admin: 'Nuevo mensaje' });
+	});
 });

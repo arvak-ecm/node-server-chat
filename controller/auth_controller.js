@@ -1,8 +1,8 @@
-const { response } = require("express");
-const bcrypt = require("bcryptjs");
+const { response } = require('express');
+const bcrypt = require('bcryptjs');
 
-const User = require("../models/user");
-const { createJWT } = require("../jwt/jwt");
+const User = require('../models/user');
+const { createJWT } = require('../jwt/jwt');
 
 const jwt = async (id) => {
 	return await createJWT(id);
@@ -16,31 +16,40 @@ const createdUser = async (req, res = response) => {
 
 		if (ifExistEmail) {
 			return res.status(400).json({
-				ok: false,
-				msg: "Error register",
+				INFO: {
+					code: '16',
+					descrip: 'TX_ERROR',
+				},
 			});
 		}
 
-		const user = new User(req.body);
+		const userDB = new User(req.body);
 
 		// Encryp Password
 		const salt = bcrypt.genSaltSync();
 
-		user.password = bcrypt.hashSync(password, salt);
+		userDB.password = bcrypt.hashSync(password, salt);
 
-		await user.save();
+		await userDB.save();
 
-		const token = await jwt(user.id);
+		const token = await jwt(userDB.id);
+		userDB.set('token', token, { strict: false });
 
 		res.json({
-			ok: true,
-			OUTPUT: {
-				user: user,
-				token: token,
+			INFO: {
+				code: '00',
+				descrip: 'TX_OK',
 			},
+			OUTPUT: userDB,
 		});
 	} catch (err) {
 		console.log(err);
+		return res.status(500).json({
+			INFO: {
+				code: '16',
+				descrip: 'TX_ERROR',
+			},
+		});
 	}
 };
 
@@ -52,8 +61,10 @@ const login = async (req, res = response) => {
 
 		if (!userDB) {
 			return res.status(400).json({
-				ok: false,
-				msg: "Error credentials",
+				INFO: {
+					code: '16',
+					descrip: 'TX_ERROR',
+				},
 			});
 		}
 
@@ -61,25 +72,31 @@ const login = async (req, res = response) => {
 
 		if (!validPassword) {
 			return res.status(400).json({
-				ok: false,
-				msg: "Error credentials",
+				INFO: {
+					code: '16',
+					descrip: 'TX_ERROR',
+				},
 			});
 		}
 
 		const token = await jwt(userDB.id);
 
+		userDB.set('token', token, { strict: false });
+
 		res.json({
-			ok: true,
-			OUTPUT: {
-				user: userDB,
-				token: token,
+			INFO: {
+				code: '00',
+				descrip: 'TX_OK',
 			},
+			OUTPUT: userDB,
 		});
 	} catch (err) {
 		console.log(err);
 		return res.status(500).json({
-			ok: false,
-			msg: "Error internal server",
+			INFO: {
+				code: '16',
+				descrip: 'TX_ERROR',
+			},
 		});
 	}
 };
@@ -91,27 +108,32 @@ const renewJWT = async (req, res = response) => {
 		const userDB = await User.findById(uid);
 
 		if (!userDB) {
-			return res.status(400).json({
-				ok: false,
-				msg: "Error credentials",
+			res.status(400).json({
+				INFO: {
+					code: '16',
+					descrip: 'TX_ERROR',
+				},
 			});
 		}
 
 		const token = await jwt(userDB.id);
-		console.log(userDB);
+
+		userDB.set('token', token, { strict: false });
 
 		res.json({
-			ok: true,
-			OUTPUT: {
-				user: userDB,
-				token: token,
+			INFO: {
+				code: '00',
+				descrip: 'TX_OK',
 			},
+			OUTPUT: userDB,
 		});
 	} catch (err) {
 		console.log(err);
 		return res.status(500).json({
-			ok: false,
-			msg: "Error internal server",
+			INFO: {
+				code: '16',
+				descrip: 'TX_ERROR',
+			},
 		});
 	}
 };

@@ -1,4 +1,4 @@
-const jwt = require("jsonwebtoken");
+const jwt = require('jsonwebtoken');
 
 const createJWT = (uid) => {
 	return new Promise((resolve, reject) => {
@@ -10,11 +10,11 @@ const createJWT = (uid) => {
 			payload,
 			process.env.JWT_KEY,
 			{
-				expiresIn: "12h",
+				expiresIn: '12h',
 			},
 			(err, token) => {
 				if (err) {
-					reject("error create token");
+					reject('error create token');
 				} else {
 					resolve(token);
 				}
@@ -23,6 +23,17 @@ const createJWT = (uid) => {
 	});
 };
 
+const checkJWT = (token = '') => {
+	try {
+		const { uid } = jwt.verify(token, process.env.JWT_KEY);
+		// req.uid = uid;
+		return [true, uid];
+	} catch (error) {
+		return [false, null];
+	}
+};
+
 module.exports = {
 	createJWT,
+	checkJWT,
 };
