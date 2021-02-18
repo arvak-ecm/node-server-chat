@@ -3,6 +3,7 @@ const { checkJWT } = require('../jwt/jwt');
 const {
 	userConect,
 	userDisconect,
+	saveMsg,
 } = require('../controller/socket_controller');
 
 // Mensajes de Sockets
@@ -17,9 +18,8 @@ io.on('connection', (client) => {
 
 	// init user room chat
 	client.join(uid);
-	client.on('person-msg', (payload) => {
-		console.log(payload);
-
+	client.on('person-msg', async (payload) => {
+		await saveMsg(payload);
 		io.to(payload.to).emit('person-msg', payload);
 	});
 
